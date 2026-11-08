@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    :root {
+      color-scheme: light dark;
+      --window: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --muted: #6e6e73;
+      --line: #e5e5ea; --accent: #007aff; --hover: #efeff4;
+      --ok: #047857; --bad: #ff3b30;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --window: #1c1c1e; --card: #2c2c2e; --text: #f5f5f7; --muted: #98989d;
+        --line: #38383a; --accent: #0a84ff; --hover: #3a3a3c;
+        --ok: #30d158; --bad: #ff453a;
+      }
+    }
+    body { font: 13px/1.5 -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
+           margin: 0; padding: 14px 16px; width: 340px;
+           background: var(--window); color: var(--text); }
+    h1 { font-size: 15px; margin: 0 0 8px; }
+    h2 { font-size: 13px; margin: 16px 0 6px; color: var(--text); }
+    label { display: flex; gap: 8px; align-items: center; margin: 10px 0; }
+    #status { color: var(--muted); margin: 6px 0 2px; }
+    button { padding: 7px; border: 1px solid transparent; border-radius: 8px;
+             background: var(--accent); color: #fff; cursor: pointer; font: inherit; }
+    button.secondary { background: var(--card); color: var(--text);
+             border-color: var(--line); margin-top: 8px; width: 100%; }
+    button.secondary:hover { background: var(--hover); }
+    button.small { padding: 3px 10px; font-size: 12px; }
+    button:disabled { opacity: .45; cursor: default; }
+    #send { width: 100%; }
+    ul { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; }
+    li { display: flex; gap: 8px; align-items: center; justify-content: space-between;
+         padding: 7px 0; border-bottom: 1px solid var(--line); }
+    .meta { min-width: 0; }
+    .name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kind { color: var(--muted); font-size: 11px; }
+    .muted { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+    code { background: var(--hover); padding: 1px 4px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>PDM</h1>
+  <div id="status">正在连接本地宿主…</div>
+  <label><input type="checkbox" id="takeover" /> 接管浏览器下载</label>
+  <button id="send">用 PDM 下载当前页面</button>
+  <button id="ping" class="secondary">重新检测宿主</button>
+
+  <h2>本页媒体 <span id="mediaCount"></span></h2>
+  <ul id="mediaList"></ul>
+  <p id="mediaEmpty" class="muted">播放视频后，这里会列出可下载的媒体（HLS / DASH / 普通视频），并扫描页面里的播放列表链接。</p>
+  <p id="mseHint" class="muted" hidden>检测到 MSE/blob 视频流；可尝试下方多轨捕获，或在开发者工具 Network 中查找 m3u8/mpd。</p>
+
+  <h2>MSE 捕获（实验）</h2>
+  <p class="muted">多轨未加密 fMP4/WebM；每轨最多 512 MiB、总计 1 GiB。先点“开始捕获”，再播放视频；检测到 EME/DRM 立即停止；配置 ffmpeg 时会自动合并视频+音频。</p>
+  <button id="mseStart" class="secondary">开始 MSE 捕获</button>
+  <button id="mseStop" class="secondary">停止并保存</button>
+  <p id="mseStatus" class="muted"></p>
+
+  <button id="scan" class="secondary">扫描页面媒体</button>
+  <button id="clear" class="secondary">清空列表</button>
+
+  <p class="muted" style="margin-top:12px">
+    需要先运行 <code>packaging\install_native_host.py</code> 注册宿主。
+  </p>
+  <script src="popup.js"></script>
+</body>
+</html>

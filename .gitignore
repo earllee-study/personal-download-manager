@@ -1,0 +1,46 @@
+# Python / pytest
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+*.egg
+.venv/
+venv/
+
+# Build / release outputs
+build/
+dist/
+packaging/update-manifest.json
+*.spec.bak
+
+# Local test artifacts
+tmp-install-test.log
+*.log
+*.pdm.part
+*.pdm.json
+.part
+
+# Secrets / local environment (never commit)
+*.pfx
+*.p12
+.env
+.env.*
+.claude/
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Internal / non-public analysis, handoff notes and raw evidence
+docs/HANDOFF.md
+docs/DEVELOPMENT-STATUS-*.md
+docs/RENAME-STATUS.md
+docs/*-reverse-engineering.md
+docs/*-comparison-*.md
+docs/public-*.md
+bench/results/
+
+# Local-only machine setup notes (never publish)
+docs/github-ssh-*.md

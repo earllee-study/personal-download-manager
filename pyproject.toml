@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "personal-download-manager"
+version = "0.1.0"
+description = "A multi-connection, resumable HTTP(S) download engine; test project developed with deepseek-v4.1-flash-1017"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Personal Download Manager project" }]
+dependencies = [
+    "httpx>=0.27",
+    # AES-128 HLS segment decryption (standard HLS, not DRM).
+    "cryptography>=41",
+]
+
+[project.optional-dependencies]
+http2 = ["h2>=4.1"]
+http3 = ["aioquic>=1.0"]
+sftp = ["paramiko>=3.4"]
+socks = ["socksio>=1.0"]
+gui = ["PySide6-Essentials>=6.7"]
+full = [
+    "h2>=4.1", "aioquic>=1.0", "paramiko>=3.4", "socksio>=1.0",
+    "rich>=13", "PySide6-Essentials>=6.7",
+]
+dev = [
+    "pytest>=8", "rich>=13", "h2>=4.1", "aioquic>=1.0", "paramiko>=3.4",
+    "pyftpdlib>=2.0", "socksio>=1.0", "PySide6-Essentials>=6.7",
+]
+
+[project.scripts]
+pdm = "personal_download_manager.cli:main"
+pdm-gui = "personal_download_manager.gui.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
+markers = [
+    "slow: tests that take several seconds",
+]

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>PDM MSE capture test</title>
+  <style>
+    body { font: 14px/1.6 "Segoe UI", "Microsoft YaHei UI", sans-serif; margin: 32px; color: #1d1d1f; }
+    code { background: #f1f5f9; padding: 1px 4px; border-radius: 4px; }
+    video { width: 320px; height: 180px; background: #111; border-radius: 8px; }
+    .note { color: #6e6e73; }
+    button { padding: 7px 14px; border: 0; border-radius: 8px; background: #007aff; color: #fff; cursor: pointer; margin-right: 8px; }
+    button:disabled { opacity: .55; cursor: default; }
+  </style>
+</head>
+<body>
+  <h1>PDM MSE 捕获测试页（实验）</h1>
+  <p class="note">
+    1. 打开扩展弹窗，点“开始 MSE 捕获”。<br />
+    2. 回到本页点下面的按钮，把 fMP4 通过 <code>SourceBuffer.appendBuffer()</code> 喂给 MSE。<br />
+    3. 再点扩展弹窗的“停止并保存”。<br />
+    多轨演示会创建视频 + 音频两个 SourceBuffer；仅验证未加密 fMP4，输出是捕获到的分片拼接，
+    配置 ffmpeg 时宿主会尝试 <code>-c copy</code> 合并。
+  </p>
+  <video id="video" controls muted></video>
+  <p>
+    <button id="play">播放单轨演示</button>
+    <button id="playMulti">播放多轨演示（视频+音频）</button>
+  </p>
+  <pre id="log"></pre>
+
+  <script>
+    const video = document.getElementById("video");
+    const log = document.getElementById("log");
+    let mediaSource = null;
+    let objectUrl = null;
+    let buffers = [];
+
+    function write(text) {
+      log.textContent += text + "\n";
+    }
+
+    function waitForSourceOpen(source) {
+      if (source.readyState === "open") return Promise.resolve();
+      return new Promise((resolve) =>
+        source.addEventListener("sourceopen", resolve, { once: true })
+      );
+    }
+
+    function appendAndWait(buffer, data) {
+      return new Promise((resolve, reject) => {
+        const onEnd = () => {
+          buffer.removeEventListener("error", onError);
+          resolve();
+        };
+        const onError = () => {
+          buffer.removeEventListener("updateend", onEnd);
+          reject(new Error("SourceBuffer error"));
+        };
+        buffer.addEventListener("updateend", onEnd, { once: true });
+        buffer.addEventListener("error", onError, { once: true });
+        try {
+          buffer.appendBuffer(data);
+        } catch (error) {
+          buffer.removeEventListener("updateend", onEnd);
+          buffer.removeEventListener("error", onError);
+          reject(error);
+        }
+      });
+    }
+
+    function resetMedia() {
+      buffers = [];
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+      }
+      try {
+        video.pause();
+      } catch (error) {
+        /* ignore */
+      }
+      video.removeAttribute("src");
+      video.load();
+      mediaSource = null;
+    }
+
+    function addBuffer(mime) {
+      try {
+        return mediaSource.addSourceBuffer(mime);
+      } catch (error) {
+        const fallback = mime.split(";")[0];
+        write(`addSourceBuffer(${mime}) failed: ${error}; retry ${fallback}`);
+        return mediaSource.addSourceBuffer(fallback);
+      }
+    }
+
+    async function prepare() {
+      resetMedia();
+      mediaSource = new MediaSource();
+      objectUrl = URL.createObjectURL(mediaSource);
+      video.src = objectUrl;
+      await waitForSourceOpen(mediaSource);
+    }
+
+    async function fetchBytes(path) {
+      const response = await fetch(path);
+      if (!response.ok) throw new Error(`HTTP ${response.status} for ${path}`);
+      return response.arrayBuffer();
+    }
+
+    async function playSingle() {
+      const button = document.getElementById("play");
+      button.disabled = true;
+      try {
+        await prepare();
+        const buffer = addBuffer('video/mp4; codecs="avc1.42E01E"');
+        buffers.push(buffer);
+        const data = await fetchBytes("/media/mse-demo.mp4");
+        write(`single appendBuffer(${data.byteLength} bytes)`);
+        await appendAndWait(buffer, data);
+        await video.play().catch(() => {});
+      } catch (error) {
+        write(`single error: ${error}`);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function playMulti() {
+      const button = document.getElementById("playMulti");
+      button.disabled = true;
+      try {
+        await prepare();
+        const videoBuffer = addBuffer('video/mp4; codecs="avc1.42C00A"');
+        const audioBuffer = addBuffer('audio/mp4; codecs="mp4a.40.2"');
+        buffers.push(videoBuffer, audioBuffer);
+        const [videoData, audioData] = await Promise.all([
+          fetchBytes("/media/mse-video.mp4"),
+          fetchBytes("/media/mse-audio.mp4"),
+        ]);
+        write(
+          `multi appendBuffer(video=${videoData.byteLength}, audio=${audioData.byteLength})`
+        );
+        await appendAndWait(videoBuffer, videoData);
+        await appendAndWait(audioBuffer, audioData);
+        await video.play().catch(() => {});
+      } catch (error) {
+        write(`multi error: ${error}`);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    document.getElementById("play").addEventListener("click", playSingle);
+    document.getElementById("playMulti").addEventListener("click", playMulti);
+  </script>
+</body>
+</html>

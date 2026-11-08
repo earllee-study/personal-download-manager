@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>PDM MSE WebM capture test</title>
+  <style>
+    body { font: 14px/1.6 "Segoe UI", "Microsoft YaHei UI", sans-serif; margin: 32px; color: #1d1d1f; }
+    code { background: #f1f5f9; padding: 1px 4px; border-radius: 4px; }
+    video { width: 320px; height: 180px; background: #111; border-radius: 8px; }
+    .note { color: #6e6e73; }
+    button { padding: 7px 14px; border: 0; border-radius: 8px; background: #007aff; color: #fff; cursor: pointer; margin-right: 8px; }
+    button:disabled { opacity: .55; cursor: default; }
+  </style>
+</head>
+<body>
+  <h1>PDM MSE WebM 捕获测试页（实验）</h1>
+  <p class="note">
+    1. 打开扩展弹窗，点“开始 MSE 捕获”。<br />
+    2. 回到本页点下面的按钮，把 VP9/Opus WebM 通过
+       <code>SourceBuffer.appendBuffer()</code> 分块喂给 MSE。<br />
+    3. 再点扩展弹窗的“停止并保存”。<br />
+    本页验证未加密 WebM 的轨道识别、<code>.webm</code> 命名、以及 ffmpeg
+    <code>-c copy</code> 合并；不涉及 DRM。
+  </p>
+  <video id="video" controls muted></video>
+  <p>
+    <button id="playWebm">播放 WebM 多轨演示（视频 VP9 + 音频 Opus）</button>
+  </p>
+  <pre id="log"></pre>
+
+  <script>
+    const video = document.getElementById("video");
+    const log = document.getElementById("log");
+    let mediaSource = null;
+    let objectUrl = null;
+    let buffers = [];
+
+    function write(text) {
+      log.textContent += text + "\n";
+    }
+
+    function waitForSourceOpen(source) {
+      if (source.readyState === "open") return Promise.resolve();
+      return new Promise((resolve) =>
+        source.addEventListener("sourceopen", resolve, { once: true })
+      );
+    }
+
+    function appendAndWait(buffer, data) {
+      return new Promise((resolve, reject) => {
+        const onEnd = () => {
+          buffer.removeEventListener("error", onError);
+          resolve();
+        };
+        const onError = () => {
+          buffer.removeEventListener("updateend", onEnd);
+          reject(new Error("SourceBuffer error"));
+        };
+        buffer.addEventListener("updateend", onEnd, { once: true });
+        buffer.addEventListener("error", onError, { once: true });
+        try {
+          buffer.appendBuffer(data);
+        } catch (error) {
+          buffer.removeEventListener("updateend", onEnd);
+          buffer.removeEventListener("error", onError);
+          reject(error);
+        }
+      });
+    }
+
+    function resetMedia() {
+      buffers = [];
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+      }
+      try {
+        video.pause();
+      } catch (error) {
+        /* ignore */
+      }
+      video.removeAttribute("src");
+      video.load();
+      mediaSource = null;
+    }
+
+    function addBuffer(mime) {
+      try {
+        return mediaSource.addSourceBuffer(mime);
+      } catch (error) {
+        const fallback = mime.split(";")[0];
+        write(`addSourceBuffer(${mime}) failed: ${error}; retry ${fallback}`);
+        return mediaSource.addSourceBuffer(fallback);
+      }
+    }
+
+    async function prepare() {
+      resetMedia();
+      mediaSource = new MediaSource();
+      objectUrl = URL.createObjectURL(mediaSource);
+      video.src = objectUrl;
+      await waitForSourceOpen(mediaSource);
+    }
+
+    async function fetchBytes(path) {
+      const response = await fetch(path);
+      if (!response.ok) throw new Error(`HTTP ${response.status} for ${path}`);
+      return response.arrayBuffer();
+    }
+
+    async function appendInChunks(buffer, data, label) {
+      const chunk = 16 * 1024;
+      let offset = 0;
+      let calls = 0;
+      while (offset < data.byteLength) {
+        const slice = data.slice(offset, Math.min(offset + chunk, data.byteLength));
+        await appendAndWait(buffer, slice);
+        offset += slice.byteLength;
+        calls += 1;
+      }
+      write(`${label}: appendBuffer ${data.byteLength} bytes in ${calls} calls`);
+    }
+
+    async function playWebm() {
+      const button = document.getElementById("playWebm");
+      button.disabled = true;
+      try {
+        await prepare();
+        const videoBuffer = addBuffer('video/webm; codecs="vp9"');
+        const audioBuffer = addBuffer('audio/webm; codecs="opus"');
+        buffers.push(videoBuffer, audioBuffer);
+        const [videoData, audioData] = await Promise.all([
+          fetchBytes("/media/mse-webm-video.webm"),
+          fetchBytes("/media/mse-webm-audio.webm"),
+        ]);
+        await appendInChunks(videoBuffer, videoData, "webm video");
+        await appendInChunks(audioBuffer, audioData, "webm audio");
+        await video.play().catch((error) => write(`play(): ${error}`));
+        write(`readyState=${video.readyState} duration=${video.duration}`);
+      } catch (error) {
+        write(`webm error: ${error}`);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    document.getElementById("playWebm").addEventListener("click", playWebm);
+  </script>
+</body>
+</html>

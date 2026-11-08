@@ -1,0 +1,9 @@
+{
+  "version": "0.2.0",
+  "url": "https://downloads.example.com/personal-download-manager/pdm-setup-0.2.0.exe",
+  "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "size": 71303168,
+  "notes": "Bug fixes and performance improvements.",
+  "page_url": "https://downloads.example.com/personal-download-manager/",
+  "published_at": "2026-11-01"
+}

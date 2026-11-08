@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>PDM extension scan test</title>
+  <style>
+    body { font: 14px/1.6 "Segoe UI", "Microsoft YaHei UI", sans-serif; margin: 32px; color: #1d1d1f; }
+    code { background: #f1f5f9; padding: 1px 4px; border-radius: 4px; }
+    iframe { width: 100%; height: 90px; border: 1px solid #d1d1d6; border-radius: 8px; }
+    .note { color: #6e6e73; }
+  </style>
+</head>
+<body>
+  <h1>PDM 扩展扫描测试页</h1>
+  <p class="note">先运行 <code>python -m http.server 8000</code>，再打开
+    <code>http://127.0.0.1:8000/browser/test-page.html</code>，然后点扩展图标。
+    页面里的 m3u8/mpd 链接不需要真实存在，扫描只读取 URL。</p>
+
+  <h2>普通视频与播放列表链接</h2>
+  <video controls width="320" src="blob:http://127.0.0.1:8000/mse-demo"></video>
+  <ul>
+    <li><a href="http://127.0.0.1:8000/media/main.m3u8">main.m3u8</a></li>
+    <li><a href="http://127.0.0.1:8000/media/master.m3u8">master.m3u8（两个码率变体）</a></li>
+    <li><a href="http://127.0.0.1:8000/media/other.mpd">other.mpd</a></li>
+    <li><a href="http://127.0.0.1:8000/media/plain.mp4">plain.mp4</a></li>
+  </ul>
+
+  <h2>内联脚本里的播放列表</h2>
+  <p class="note">扫描器会从内联脚本中提取 m3u8/mpd URL。</p>
+  <script>
+    window.__PDMDemoPlaylist = "http://127.0.0.1:8000/media/scripted.m3u8";
+  </script>
+
+  <h2>Cookie 转发测试</h2>
+  <p class="note">页面脚本会设置 <code>pdmcookie=verified</code>。右键下面的链接时，扩展应把
+    目标 URL 的 Cookie 转发给 PDM；服务器没有该 Cookie 会返回 403。</p>
+  <script>document.cookie = "pdmcookie=verified; path=/; SameSite=Lax";</script>
+  <p><a href="http://127.0.0.1:8000/media/cookie-check.bin">cookie-check.bin（64 KiB，需要 pdmcookie）</a></p>
+
+  <h2>接管下载测试</h2>
+  <p class="note">先在扩展弹窗勾选“接管浏览器下载”，再点下面的链接：Chrome 的下载应被取消，
+    改由 PDM 接管。</p>
+  <p><a href="http://127.0.0.1:8000/media/takeover.bin" download="takeover-demo.bin">
+    下载 takeover-demo.bin（128 KiB，用于接管测试）</a></p>
+
+  <h2>iframe</h2>
+  <p class="note">页面扫描使用 <code>allFrames</code>，会包含这个 iframe 里的链接。</p>
+  <iframe src="http://127.0.0.1:8000/browser/frame.html"></iframe>
+
+  <h2>Shadow DOM</h2>
+  <div id="shadow-host"></div>
+  <script>
+    const root = document.getElementById("shadow-host").attachShadow({ mode: "open" });
+    root.innerHTML =
+      '<p>Shadow DOM 内的链接：' +
+      '<a href="http://127.0.0.1:8000/media/shadow.m3u8">shadow.m3u8</a></p>';
+  </script>
+
+  <p class="note">页面里的 <code>blob:</code> 视频用于验证 MSE/blob 检测提示。</p>
+  <p class="note">MSE 捕获实验请用 <a href="/browser/mse-test.html">browser/mse-test.html</a>：先在弹窗点“开始 MSE 捕获”，再播放。</p>
+</body>
+</html>

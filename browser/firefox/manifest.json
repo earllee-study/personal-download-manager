@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Personal Download Manager (PDM)",
+  "version": "0.1.0",
+  "description": "把浏览器下载交给 Personal Download Manager（PDM，通过原生消息，仅互操作）。",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "pdm@local",
+      "strict_min_version": "115.0"
+    }
+  },
+  "permissions": [
+    "nativeMessaging",
+    "webRequest",
+    "downloads",
+    "cookies",
+    "storage",
+    "notifications",
+    "contextMenus",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "action": {
+    "default_title": "PDM",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "32": "icon32.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
