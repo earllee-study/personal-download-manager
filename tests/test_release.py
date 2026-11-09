@@ -75,3 +75,22 @@ def test_cli_version_uses_package_version(capsys):
         main(["--version"])
     assert info.value.code == 0
     assert capsys.readouterr().out.strip() == f"pdm {__version__}"
+
+
+def test_installer_ships_only_public_docs():
+    """Never wildcard docs\\*: local-only notes must not enter the installer."""
+    root = Path(__file__).resolve().parents[1]
+    iss = (root / "packaging" / "pdm.iss").read_text(encoding="utf-8")
+    assert 'Source: "..\\docs\\*"' not in iss
+    for internal in (
+        "HANDOFF.md",
+        "DEVELOPMENT-STATUS",
+        "RENAME-STATUS",
+        "github-ssh",
+        "reverse-engineering",
+        "comparison-",
+        "public-",
+    ):
+        assert internal not in iss
+    for public in ("browser-integration.md", "gui.md", "gui.png", "testing.md", "updating.md"):
+        assert public in iss

@@ -80,6 +80,7 @@ python packaging\make_update_manifest.py ^
 - 未签名：首次运行会触发 Windows SmartScreen（“更多信息 → 仍要运行”）。要消除需代码签名证书 + `signtool`。
 - 升级：客户端有**用户主动**的更新检查（`pdm update` / GUI“帮助 → 检查更新…”），但安装包本身不包含常驻更新服务，也不会静默安装。发布时用 `make_update_manifest.py` 生成清单并托管到 HTTPS。
 - 安装向导是英文（Inno Setup 不自带简体中文 `.isl`；任务描述仍是中文）。
+- 安装包只打包 `pdm.iss` 中**显式列出**的公开 docs。不要改回 `docs\*`：开发目录里可能有被 `.gitignore` 排除的交接、开发状态、内部分析和 SSH 配置文档，通配符会把它们带进公开安装包。
 - 本机已验证：静默安装（含 `browserintegration`）→ 清单为合法 JSON、注册表指向正确、宿主 `ping` 正常 → 静默卸载后目录与注册表键清空。
 - 静默安装任务参数不要加引号：`/TASKS=browserintegration`。
 - `dist\`、`build\` 是构建产物，不入库。

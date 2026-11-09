@@ -9,7 +9,7 @@
 
 > **测试项目声明**：这是一个使用 **deepseek-v4.1-flash-1017** 开发的个人学习/测试项目，不是生产级软件。仅用于测试与互操作性研究；请只下载你有权下载的内容。原始基准数据与内部证据不随公开仓库发布。
 
-> 当前状态：**引擎 + CLI + macOS 风格 GUI/队列 + 界面多语言（中/英） + 调度/重试/重复计划（每天/按星期/每隔 N 天）+ 多队列/带宽时段 + 下载完成后关机 + 主机策略/代理分组 + 站点认证 + 分类目录 + 通配批量 + AIMD/HTTP/2 + HTTP/3（QUIC）+ FTP/FTPS/SFTP + 多源镜像 + HLS + DASH（多 Period/SIDX + 双轨 ffmpeg 合并）+ 浏览器集成（Chromium/Firefox）+ MSE 多轨实验捕获（fMP4/WebM，Chrome/Edge + Firefox 128+ MAIN-world）、GUI 队列导入、后台归档与源轨清理 + 安装包已完成**，392 项自动化测试（Node 可用时 392 passed；无 Node 时 391 passed、1 skipped），公网与本地基准（含 2 万行列表压力测试、HTTP/2/3 与丢包、FTP/SFTP 吞吐）均已跑通。
+> 当前状态：**引擎 + CLI + macOS 风格 GUI/队列 + 界面多语言（中/英） + 调度/重试/重复计划（每天/按星期/每隔 N 天）+ 多队列/带宽时段 + 下载完成后关机 + 主机策略/代理分组 + 站点认证 + 分类目录 + 通配批量 + AIMD/HTTP/2 + HTTP/3（QUIC）+ FTP/FTPS/SFTP + 多源镜像 + HLS + DASH（多 Period/SIDX + 双轨 ffmpeg 合并）+ 浏览器集成（Chromium/Firefox）+ MSE 多轨实验捕获（fMP4/WebM，Chrome/Edge + Firefox 128+ MAIN-world）、GUI 队列导入、后台归档与源轨清理 + 安装包已完成**，393 项自动化测试（Node 可用时 393 passed；无 Node 时 392 passed、1 skipped），公网与本地基准（含 2 万行列表压力测试、HTTP/2/3 与丢包、FTP/SFTP 吞吐）均已跑通。
 > HLS（含 AES-128）、DASH、浏览器媒体嗅探/页面扫描已完成；MSE/blob 多轨实验捕获已实现（未加密 fMP4/WebM、默认 8 GiB/轨、16 GiB/会话、可配置、可选 ffmpeg 合并），**fMP4 与 WebM 均已实机验证**，并已建立公开站点矩阵（DASH-IF/Akamai、Shaka angel-one、Unified Tears of Steel + 本地 WebM 控制；见 `docs/mse-site-matrix-2026-11-08.md`），捕获结束后会作为“已捕获”任务进入 GUI 队列。单轨 Chrome/Edge 手动验证通过；多轨已在 Edge 156 本地夹具、DASH-IF/Akamai 真实站点，以及 **Chrome for Testing 157**（同版本内核，headless 隔离配置）的正常/重置复验中通过（见 [`docs/browser-verification-2026-11-04-mse-multitrack.md`](docs/browser-verification-2026-11-04-mse-multitrack.md)、[`docs/browser-verification-2026-11-04-mse-real-site.md`](docs/browser-verification-2026-11-04-mse-real-site.md)、[`docs/browser-verification-2026-11-07-mse-chrome.md`](docs/browser-verification-2026-11-07-mse-chrome.md)）；**Firefox 159 的 MAIN-world 注入已用 WebDriver BiDi 探针 + 本地 WebM/严格 CSP 页验证**（2 轨/4 chunks/48,321 B；Gecko 下 ArrayBuffer 需在 MAIN world 先转 base64），完整 background→Native Host→GUI 导入/归档已验证（WebM 合并 47,971 B、fMP4 合并 31,589 B、DASH-IF/Akamai BBB 合并 4,189,997 B，GUI 归档 SHA-256 一致）；本地 hls.js 第二播放器已验证（muxed 242,020 B，GUI 归档一致），公网 hls.js demo 因 jQuery/googleapis 不可达默认 blocked（测试专用 jQuery shim 下已捕获 5,506,934 B；webRequest 重定向到 cdnjs 亦通过（2,730,802 B））；popup 页面按钮已通过 iframe 点击验证、工具栏 action popup 未点击；Shaka Player demo（appspot）不可达；商业 DRM/直播未测，见 [`docs/firefox-mse-mainworld-evaluation-2026-11-08.md`](docs/firefox-mse-mainworld-evaluation-2026-11-08.md)；完整视频抓取器仍在 Roadmap。
 
 > 内部开发状态、交接文档与原始证据不随公开仓库发布。
@@ -295,7 +295,7 @@ GUI 在“设置 → 更新清单”填写 HTTPS 清单 URL，然后“帮助 �
 
 ### CI 与发布
 
-- `.github/workflows/ci.yml`：Windows + Python 3.13/3.14 矩阵，安装 `.[dev]`、校验版本一致性、编译、校验 PowerShell 签名脚本语法、运行全部 392 项测试并上传 JUnit。
+- `.github/workflows/ci.yml`：Windows + Python 3.13/3.14 矩阵，安装 `.[dev]`、校验版本一致性、编译、校验 PowerShell 签名脚本语法、运行全部 393 项测试并上传 JUnit。
 - `.github/workflows/release.yml`：push tag `vX.Y.Z`（或手动指定版本）→ 构建三个 onedir 便携版 → Inno Setup 安装包 → 可选 Authenticode 签名 → zip/SHA256SUMS → 生成 `latest.json` → 发布 GitHub Release 资产。
 - 版本由 `packaging/check_version.py` 强制三处一致；签名通过 `WINDOWS_CERT_PFX_BASE64` / `WINDOWS_CERT_PASSWORD` secrets 启用，没有证书时发布未签名产物并给出 warning，不伪造签名。
 - 当前目录尚不是 git 仓库，workflow 已就绪但未在远端执行；本地已跑通 dry-run：PyInstaller 构建、打包 CLI/GUI 冒烟、Inno `/DAppVersion`、`latest.json`、zip + SHA256SUMS，以及打包 CLI 的更新下载校验。无代码签名证书，签名步骤只做了语法验证。本地复现见 [`docs/ci.md`](docs/ci.md)。
@@ -597,7 +597,7 @@ AES-128 解密在分片落盘后由 `cryptography` 的 AES-CBC/PKCS#7 完成，�
 - 站点规则按请求主机生效（主地址、重定向后的主机、镜像主机、HLS 分片主机各自匹配）；同一任务跨主机时可能出现多套凭据，属预期行为。
 - 代理分组只保存“名称 + 代理 URL”；没有按分组统计流量或健康检查。规则同时填 `proxy` 与 `proxy_group` 时 `proxy` 优先（GUI 会提示）。
 - 大列表（2 万行）已做压力测试：绘制与进度更新是常数开销，但**按列排序是一次性 O(n log n)**（20k 行约 1.2 s，Qt 代理排序）；日常几十到几百个任务无感。
-- 便携版是 **onedir**（非单文件）：启动快、误报少，但目录较大（GUI 约 159 MB）。安装包 `dist\pdm-setup-0.1.0.exe`（92,149,633 B，SHA-256 `d9f56ff4…921e`）已于 2026-11-08 重新构建（含 MSE 大内容、Firefox popup UI、更新后的 Chromium 扩展）；2026-11-08 静默安装/卸载到临时目录通过（Host/browser-integration 任务未选，现有 Host 注册未改）。本机无 `signtool`/代码签名证书、不是 git 仓库/无 `gh`，更新清单 URL 仍是示例地址。
+- 便携版是 **onedir**（非单文件）：启动快、误报少，但目录较大（GUI 约 159 MB）。安装包 `dist\pdm-setup-0.1.0.exe`（92,105,648 B，SHA-256 `fa0ff2a6…cd09`）已于 2026-11-09 重新构建（含 MSE 大内容、Firefox popup UI、更新后的 Chromium 扩展；安装包只打包公开 docs）；2026-11-09 静默安装/卸载到临时目录通过（Host/browser-integration 任务未选，现有 Host 注册未改），安装后的 `docs` 仅含 16 个公开文档。本机无 `signtool`/代码签名证书；已是公开 GitHub 仓库且 CI 已实跑（Python 3.13/3.14 均通过）；更新清单 URL 仍是示例地址。
 - 未做代码签名，首次运行会有 SmartScreen 警告。更新器只做“用户主动检查 + SHA-256 + 二次确认”，不会绕过 SmartScreen；清单托管方若被攻破，仍可发布自己的文件与哈希，发布者身份需要后续代码签名来证明。启动时不会自动检查更新。
 - 界面语言支持中文/English，切换后需重启；分类名、队列名等用户数据按原样显示，不随语言翻译。原生文件选择框按钮与系统级对话框跟随操作系统，不跟随应用内语言。
 - 默认不读取 `HTTP_PROXY`/`HTTPS_PROXY` 环境变量（保证基准可复现）；需要代理时显式传 `--proxy`。
@@ -612,8 +612,8 @@ AES-128 解密在分片落盘后由 `cryptography` 的 AES-CBC/PKCS#7 完成，�
 - HTTP/2：`--http2` 时共用一个客户端；只有服务器协商到 h2 才真正多路复用，HTTP/1.1 服务器上等价于普通连接池。本地 TLS+h2 测试服务器已覆盖多路复用；h2 仍是显式开关（保证基准可复现），不自动协商。
 - HTTP/2 可信证书对照使用仓库内的测试 CA；`bench/certstore.py` 只改当前用户 Root，且对照结束后已移除。复现时请务必在测量后执行 `remove`，不要长期保留测试私钥的信任。
 - HTTP/3：`--http3` 需要可选依赖 aioquic；按主机建立一条 QUIC 连接并承载所有分段。不支持代理（CONNECT-UDP/MASQUE 未实现），也不做 Alt-Svc 自动升级或在 h3 失败时回退到 h2/h1——显式开关、显式失败。aioquic 是纯 Python 实现，无丢包回环吞吐约 3.7–6 MiB/s（8 流/单流，见 4.10）；丢包下仍按 SHA-256 完整完成。HLS/DASH 的 `--http3` 也可用（按分片/清单主机各建一条连接），但没有专门基准。
-- `dist\` 中的 GUI/CLI/Host 与安装包已于 2026-11-08 全量重建，包含 MSE 大内容、Firefox popup UI、更新后的 Chromium 扩展。GUI/CLI spec 的 `hiddenimports` 已包含 `aioquic`、`paramiko`（Host 只做 Native Messaging，不打包这些依赖）。源码运行 HTTP/3 需 `pip install -e ".[http3]"`，SFTP 需 `.[sftp]`（或 `.[full]`）；FTP/FTPS 只用标准库。
-- 2026-11-08 全量重建：Host exe 4,722,994 B / SHA-256 `83cca27e…da69`；Host zip 17,279,190 B / `7827e7ce…86a1`；安装包 92,149,633 B / `d9f56ff4…921e`；GUI zip 70,024,916 B / `38d3cb24…88d3`；CLI zip 36,871,093 B / `26a4676d…674f`。安装/卸载临时目录冒烟通过；Host/browser-integration 任务未选。
+- `dist\` 中的 GUI/CLI/Host 与安装包已于 2026-11-09 全量重建，包含 MSE 大内容、Firefox popup UI、更新后的 Chromium 扩展；安装包只打包公开 docs。GUI/CLI spec 的 `hiddenimports` 已包含 `aioquic`、`paramiko`（Host 只做 Native Messaging，不打包这些依赖）。源码运行 HTTP/3 需 `pip install -e ".[http3]"`，SFTP 需 `.[sftp]`（或 `.[full]`）；FTP/FTPS 只用标准库。
+- 2026-11-09 全量重建：Host exe 4,722,827 B / SHA-256 `240ff600…183a`；Host zip 17,281,641 B / `0f7682cb…fc9a`；安装包 92,105,648 B / `fa0ff2a6…cd09`；GUI zip 70,020,657 B / `a8e3193b…8716`；CLI zip 36,870,758 B / `610d03fd…4473`。安装/卸载临时目录冒烟通过；Host/browser-integration 任务未选；安装后的 `docs` 仅含 16 个公开文档。
 - AIMD 默认关闭（保证基准可复现）；开启后起步阶段会比固定连接数慢。
 - 多源镜像要求镜像与主地址返回**相同大小**，且强 ETag 或 Last-Modified 一致；不满足的镜像会被静默丢弃（日志里有原因）。
 - 每个镜像主机按自己的站点规则建立客户端（UA/Cookie/认证/代理）；镜像需要不同代理时用主机规则表达，任务级 `--proxy` 只作为所有主机的默认值。
@@ -728,7 +728,7 @@ PDM/
 ├─ browser/             # Chromium MV3 扩展、Firefox 构建、手动验证页
 ├─ packaging/           # PyInstaller spec、Inno Setup 脚本、签名/清单工具
 ├─ .github/workflows/   # CI（测试矩阵）与 Release（构建/签名/发布）
-├─ tests/               # 392 项测试 + 可控 HTTP/1.1/h2/h3/FTP/SFTP 服务器
+├─ tests/               # 393 项测试 + 可控 HTTP/1.1/h2/h3/FTP/SFTP 服务器
 ├─ bench/               # 本地/公网基准、列表/HTTP/3/丢包/远程协议基准
 ├─ docs/                # 逆向报告、测试说明、浏览器验证、CI、GUI 截图
 ├─ pdm.cmd         # CLI 免安装入口

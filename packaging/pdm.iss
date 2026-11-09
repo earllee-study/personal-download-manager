@@ -48,7 +48,26 @@ Source: "{#SourceRoot}\pdm-cli\*"; DestDir: "{app}\cli"; Flags: recursesubdirs c
 Source: "{#SourceRoot}\pdm-host\*"; DestDir: "{app}\host"; Flags: recursesubdirs createallsubdirs ignoreversion; Tasks: browserintegration
 Source: "..\browser\extension\*"; DestDir: "{app}\browser-extension"; Flags: recursesubdirs createallsubdirs ignoreversion; Tasks: browserintegration
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\docs\*"; DestDir: "{app}\docs"; Flags: recursesubdirs createallsubdirs ignoreversion
+; Public documentation only.  Do NOT use a docs\* wildcard here: the working
+; tree can contain gitignored local notes (handoff, development status,
+; internal analysis, SSH setup) that must never be shipped in a public
+; installer.
+Source: "..\docs\browser-integration.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\browser-verification-2026-11-01.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\browser-verification-2026-11-02.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\browser-verification-2026-11-04-mse-multitrack.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\browser-verification-2026-11-04-mse-real-site.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\browser-verification-2026-11-04-mse-reset-stop.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\browser-verification-2026-11-07-mse-chrome.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\browser-verification-2026-11-07-mse-queue.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\browser-verification-2026-11-08-mse-webm.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\ci.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\firefox-mse-mainworld-evaluation-2026-11-08.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\gui.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\gui.png"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\mse-site-matrix-2026-11-08.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\testing.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\updating.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 
 [Registry]
 Root: HKCU; Subkey: "Software\Google\Chrome\NativeMessagingHosts\com.pdm.downloader.host"; ValueType: string; ValueData: "{app}\com.pdm.downloader.host.json"; Flags: uninsdeletekey; Tasks: browserintegration

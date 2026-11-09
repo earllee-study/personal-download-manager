@@ -1,7 +1,7 @@
 # CI 与发布流水线
 
-仓库内的 workflow 位于 `.github/workflows/`。这些 workflow 尚未在远端执行；
-推送到 GitHub 后即可使用。
+仓库内的 workflow 位于 `.github/workflows/`。CI 已在 GitHub Actions 实跑，
+Python 3.13 / 3.14 矩阵均通过。
 
 ## 1. CI（`.github/workflows/ci.yml`）
 
