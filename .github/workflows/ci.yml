@@ -12,6 +12,7 @@ permissions:
 env:
   PYTHONUTF8: "1"
   QT_QPA_PLATFORM: "offscreen"
+  PYTHONFAULTHANDLER: "1"
 
 jobs:
   test:
@@ -57,7 +58,7 @@ jobs:
           }
 
       - name: Run tests
-        run: python -m pytest -q --junitxml=pytest.xml
+        run: python packaging/run_tests.py -q --junitxml=pytest.xml
 
       - name: Upload pytest results
         if: always()
