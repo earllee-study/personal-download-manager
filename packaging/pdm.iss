@@ -68,6 +68,7 @@ Source: "..\docs\gui.png"; DestDir: "{app}\docs"; Flags: ignoreversion
 Source: "..\docs\mse-site-matrix-2026-11-08.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 Source: "..\docs\testing.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 Source: "..\docs\updating.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\docs\signing.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 
 [Registry]
 Root: HKCU; Subkey: "Software\Google\Chrome\NativeMessagingHosts\com.pdm.downloader.host"; ValueType: string; ValueData: "{app}\com.pdm.downloader.host.json"; Flags: uninsdeletekey; Tasks: browserintegration

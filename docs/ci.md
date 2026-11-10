@@ -29,12 +29,16 @@ Python 3.13 / 3.14 矩阵均通过。
    - `dist\pdm-gui\pdm-gui.exe`
    - `dist\pdm-cli\pdm.exe`
    - `dist\pdm-host\pdm-host.exe`
-3. **可选签名（内部程序）**：存在仓库 secret `WINDOWS_CERT_PFX_BASE64` 时，解码到
-   `RUNNER_TEMP`，调用 `packaging/sign_windows.ps1` 对 GUI/CLI/Host 签名并
-   `signtool verify`，最后删除 PFX。必须在打安装包/zip 之前完成，否则包内仍是未签名文件。
+3. **签名（便携版）**：优先使用 **SignPath OSS**：上传未签名 exe 为 GitHub
+   artifact，提交 SignPath 签名请求，下载并覆盖 GUI/CLI/Host，再用
+   `Get-AuthenticodeSignature` 校验。未配置 SignPath 但存在
+   `WINDOWS_CERT_PFX_BASE64` 时回退到 `packaging/sign_windows.ps1` + PFX。
+   签名必须在打安装包/zip 之前完成，否则包内仍是未签名文件。详见
+   [`signing.md`](signing.md)。
 4. 安装 Inno Setup，执行 `ISCC.exe /DAppVersion=<version> packaging\pdm.iss`，
    生成 `dist\pdm-setup-<version>.exe`（内含已签名的便携版程序）。
-5. **可选签名（安装包）**：对 `pdm-setup-<version>.exe` 再执行一次签名与验证。
+5. **签名（安装包）**：对 `pdm-setup-<version>.exe` 再执行一次 SignPath 签名
+   （未配置 SignPath 时回退 PFX）并校验。
 6. 将三个 onedir 目录压缩为 `*-<version>-win64.zip`（此时内部程序已签名）。
 7. 生成 `dist\latest.json`（`make_update_manifest.py`，URL 指向本 tag 的 GitHub Release
    资产）与 `dist\SHA256SUMS.txt`。
@@ -52,7 +56,19 @@ latest.json
 SHA256SUMS.txt
 ```
 
-## 3. 签名 secrets
+## 3. 签名配置
+
+主路线是 **SignPath OSS**（完整步骤见 [`signing.md`](signing.md)）。仓库需要：
+
+| 类型 | 名称 |
+|---|---|
+| Secret | `SIGNPATH_API_TOKEN` |
+| Variable | `SIGNPATH_ORGANIZATION_ID` |
+| Variable | `SIGNPATH_PROJECT_SLUG` |
+| Variable | `SIGNPATH_SIGNING_POLICY_SLUG` |
+| Variable（可选） | `SIGNPATH_ARTIFACT_CONFIGURATION_SLUG` |
+
+PFX 兜底（可选）：
 
 | Secret | 内容 |
 |---|---|
@@ -67,13 +83,14 @@ SHA256SUMS.txt
 
 注意：
 
-- 没有证书时**不会**伪造签名；release 明确 warning，SmartScreen 仍会提示。
+- SignPath 和 PFX 都没配置时**不会**伪造签名；release 明确 warning，SmartScreen
+  仍会提示。
+- SignPath OSS 要求所有 job 在 GitHub-hosted runner 上运行；当前 workflow 满足。
 - PFX 只在 runner 临时目录存在，签名后 `finally` 删除；口令只作为进程参数/env，
   不写入文件、不打印。
 - `sign_windows.ps1` 从 Windows SDK 查找 `signtool.exe`；找不到会失败而不是跳过。
 - 证书过期/时间戳服务不可达会让 release 失败，这是有意的 fail-closed 行为。
-- **CI 不是代码签名的硬前提**：本地可用 PFX/硬件令牌 + `signtool` 直接签名；只有
-  SignPath Foundation、Certum 开源证书等免费 OSS 签名服务才要求公开仓库与 CI。
+- SignPath 的 Artifact Configuration 与 GitHub App 配置见 [`signing.md`](signing.md)。
 
 ## 4. 本地复现发布
 

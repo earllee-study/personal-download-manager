@@ -296,9 +296,9 @@ GUI 在“设置 → 更新清单”填写 HTTPS 清单 URL，然后“帮助 �
 ### CI 与发布
 
 - `.github/workflows/ci.yml`：Windows + Python 3.13/3.14 矩阵，安装 `.[dev]`、校验版本一致性、编译、校验 PowerShell 签名脚本语法、运行全部 393 项测试并上传 JUnit。
-- `.github/workflows/release.yml`：push tag `vX.Y.Z`（或手动指定版本）→ 构建三个 onedir 便携版 → Inno Setup 安装包 → 可选 Authenticode 签名 → zip/SHA256SUMS → 生成 `latest.json` → 发布 GitHub Release 资产。
-- 版本由 `packaging/check_version.py` 强制三处一致；签名通过 `WINDOWS_CERT_PFX_BASE64` / `WINDOWS_CERT_PASSWORD` secrets 启用，没有证书时发布未签名产物并给出 warning，不伪造签名。
-- 当前目录尚不是 git 仓库，workflow 已就绪但未在远端执行；本地已跑通 dry-run：PyInstaller 构建、打包 CLI/GUI 冒烟、Inno `/DAppVersion`、`latest.json`、zip + SHA256SUMS，以及打包 CLI 的更新下载校验。无代码签名证书，签名步骤只做了语法验证。本地复现见 [`docs/ci.md`](docs/ci.md)。
+- `.github/workflows/release.yml`：push tag `vX.Y.Z` 或手动运行（支持 `dry_run`）→ 构建三个 onedir 便携版 → SignPath OSS 签名（PFX 兜底）→ Inno Setup 安装包 → 安装包签名 → zip/SHA256SUMS → 生成 `latest.json` → 发布 GitHub Release 资产。
+- 签名优先使用 SignPath OSS（`SIGNPATH_API_TOKEN` + `SIGNPATH_*` variables）；未配置时回退 `WINDOWS_CERT_PFX_BASE64` / `WINDOWS_CERT_PASSWORD`，两者都没有时发布未签名产物并给出 warning，不伪造签名。完整配置见 [`docs/signing.md`](docs/signing.md)。
+- 仓库已公开并接入 GitHub Actions；CI（Python 3.13/3.14）与 Release dry-run 均已实跑通过。Release dry-run 会构建产物、校验安装包 docs 并上传 artifact，但不创建 GitHub Release。本地复现见 [`docs/ci.md`](docs/ci.md)。
 
 ---
 
@@ -597,8 +597,8 @@ AES-128 解密在分片落盘后由 `cryptography` 的 AES-CBC/PKCS#7 完成，�
 - 站点规则按请求主机生效（主地址、重定向后的主机、镜像主机、HLS 分片主机各自匹配）；同一任务跨主机时可能出现多套凭据，属预期行为。
 - 代理分组只保存“名称 + 代理 URL”；没有按分组统计流量或健康检查。规则同时填 `proxy` 与 `proxy_group` 时 `proxy` 优先（GUI 会提示）。
 - 大列表（2 万行）已做压力测试：绘制与进度更新是常数开销，但**按列排序是一次性 O(n log n)**（20k 行约 1.2 s，Qt 代理排序）；日常几十到几百个任务无感。
-- 便携版是 **onedir**（非单文件）：启动快、误报少，但目录较大（GUI 约 159 MB）。安装包 `dist\pdm-setup-0.1.0.exe`（92,105,648 B，SHA-256 `fa0ff2a6…cd09`）已于 2026-11-09 重新构建（含 MSE 大内容、Firefox popup UI、更新后的 Chromium 扩展；安装包只打包公开 docs）；2026-11-09 静默安装/卸载到临时目录通过（Host/browser-integration 任务未选，现有 Host 注册未改），安装后的 `docs` 仅含 16 个公开文档。本机无 `signtool`/代码签名证书；已是公开 GitHub 仓库且 CI 已实跑（Python 3.13/3.14 均通过）；更新清单 URL 仍是示例地址。
-- 未做代码签名，首次运行会有 SmartScreen 警告。更新器只做“用户主动检查 + SHA-256 + 二次确认”，不会绕过 SmartScreen；清单托管方若被攻破，仍可发布自己的文件与哈希，发布者身份需要后续代码签名来证明。启动时不会自动检查更新。
+- 便携版是 **onedir**（非单文件）：启动快、误报少，但目录较大（GUI 约 159 MB）。安装包 `dist\pdm-setup-0.1.0.exe`（92,105,648 B，SHA-256 `fa0ff2a6…cd09`）已于 2026-11-09 重新构建（含 MSE 大内容、Firefox popup UI、更新后的 Chromium 扩展；安装包只打包公开 docs）；2026-11-09 静默安装/卸载到临时目录通过（Host/browser-integration 任务未选，现有 Host 注册未改），安装后的 `docs` 仅含公开文档。本机无 `signtool`/代码签名证书；已是公开 GitHub 仓库且 CI 已实跑（Python 3.13/3.14 均通过）；更新清单 URL 仍是示例地址。
+- SignPath OSS 签名已接入 release workflow，配置 `SIGNPATH_*` 后启用；PFX 兜底保留。未配置签名前，首次运行会有 SmartScreen 警告。更新器只做“用户主动检查 + SHA-256 + 二次确认”，不会绕过 SmartScreen；清单托管方若被攻破，仍可发布自己的文件与哈希，发布者身份需要代码签名来证明。启动时不会自动检查更新。
 - 界面语言支持中文/English，切换后需重启；分类名、队列名等用户数据按原样显示，不随语言翻译。原生文件选择框按钮与系统级对话框跟随操作系统，不跟随应用内语言。
 - 默认不读取 `HTTP_PROXY`/`HTTPS_PROXY` 环境变量（保证基准可复现）；需要代理时显式传 `--proxy`。
 - 没有完整的浏览器视频抓取器/站点抓取；HLS 支持未加密与标准 AES-128 VOD，DASH 仍只支持未加密内容（已支持单/多 Period 与 SegmentBase/SIDX）；`--track both` 需要外部 ffmpeg 才能合并，未安装时保留视频/音频两个文件。
@@ -613,7 +613,7 @@ AES-128 解密在分片落盘后由 `cryptography` 的 AES-CBC/PKCS#7 完成，�
 - HTTP/2 可信证书对照使用仓库内的测试 CA；`bench/certstore.py` 只改当前用户 Root，且对照结束后已移除。复现时请务必在测量后执行 `remove`，不要长期保留测试私钥的信任。
 - HTTP/3：`--http3` 需要可选依赖 aioquic；按主机建立一条 QUIC 连接并承载所有分段。不支持代理（CONNECT-UDP/MASQUE 未实现），也不做 Alt-Svc 自动升级或在 h3 失败时回退到 h2/h1——显式开关、显式失败。aioquic 是纯 Python 实现，无丢包回环吞吐约 3.7–6 MiB/s（8 流/单流，见 4.10）；丢包下仍按 SHA-256 完整完成。HLS/DASH 的 `--http3` 也可用（按分片/清单主机各建一条连接），但没有专门基准。
 - `dist\` 中的 GUI/CLI/Host 与安装包已于 2026-11-09 全量重建，包含 MSE 大内容、Firefox popup UI、更新后的 Chromium 扩展；安装包只打包公开 docs。GUI/CLI spec 的 `hiddenimports` 已包含 `aioquic`、`paramiko`（Host 只做 Native Messaging，不打包这些依赖）。源码运行 HTTP/3 需 `pip install -e ".[http3]"`，SFTP 需 `.[sftp]`（或 `.[full]`）；FTP/FTPS 只用标准库。
-- 2026-11-09 全量重建：Host exe 4,722,827 B / SHA-256 `240ff600…183a`；Host zip 17,281,641 B / `0f7682cb…fc9a`；安装包 92,105,648 B / `fa0ff2a6…cd09`；GUI zip 70,020,657 B / `a8e3193b…8716`；CLI zip 36,870,758 B / `610d03fd…4473`。安装/卸载临时目录冒烟通过；Host/browser-integration 任务未选；安装后的 `docs` 仅含 16 个公开文档。
+- 2026-11-09 全量重建：Host exe 4,722,827 B / SHA-256 `240ff600…183a`；Host zip 17,281,641 B / `0f7682cb…fc9a`；安装包 92,105,648 B / `fa0ff2a6…cd09`；GUI zip 70,020,657 B / `a8e3193b…8716`；CLI zip 36,870,758 B / `610d03fd…4473`。安装/卸载临时目录冒烟通过；Host/browser-integration 任务未选；安装后的 `docs` 仅含公开文档。
 - AIMD 默认关闭（保证基准可复现）；开启后起步阶段会比固定连接数慢。
 - 多源镜像要求镜像与主地址返回**相同大小**，且强 ETag 或 Last-Modified 一致；不满足的镜像会被静默丢弃（日志里有原因）。
 - 每个镜像主机按自己的站点规则建立客户端（UA/Cookie/认证/代理）；镜像需要不同代理时用主机规则表达，任务级 `--proxy` 只作为所有主机的默认值。
@@ -676,13 +676,13 @@ AES-128 解密在分片落盘后由 `cryptography` 的 AES-CBC/PKCS#7 完成，�
 1. ~~**DASH 音视频双轨 + 可选 ffmpeg 合并**~~（完成：`--track both`、GUI 选项、`--ffmpeg`/`PDM_DOWNLOADER_FFMPEG`/PATH 探测、无 ffmpeg 保留两轨）。
 2. ~~有边界的 MSE/blob 多轨实验捕获~~（实现完成：MAIN-world hook、按 SourceBuffer 分轨、未加密 fMP4/WebM、默认 8 GiB/轨、16 GiB/会话（可配置）、DRM 拒绝、Native Messaging 分块落盘、可选 ffmpeg 合并；单轨 Chrome/Edge 手动验证通过，多轨本地夹具 + 真实 ffmpeg 合并验证通过）。Cookie 转发（Chrome 156）与 Firefox 159 接管下载均已验证，见 `docs/browser-verification-2026-11-02.md`。
 3. ~~更完整的 DASH 覆盖（多 Period、SegmentBase/SIDX）~~（完成：多 Period 逐段选择/拼接、SegmentBase+SIDX、无 indexRange 整文件回退；层级化 SIDX 与 DRM 仍不支持）。
-4. **发布工程收尾**：CI、自动更新、界面多语言均已完成；代码签名按个人使用挂起（需要真实 PFX 证书）。CI 实跑不是签名的硬前提；只有免费 OSS 签名路线才要求公开仓库 + CI。
+4. **发布工程收尾**：CI、自动更新、界面多语言均已完成；SignPath OSS 签名已接入 release workflow，配置 `SIGNPATH_*` 后启用，PFX 兜底保留。CI 与 Release dry-run 均已实跑通过。
 5. ~~下载完成后关机~~（完成 2026-11-07：会话级开关、可取消倒计时、暂停/计划/重试阻止、可注入关机命令；当时 354 passed）。个人使用的 P1 清单已清空。
 6. ~~MSE 输出接入 GUI 队列~~（完成 2026-11-07：完成记录 manifest、GUI 按会话导入为“已捕获”任务、去重/删除/属性、路径越界拒绝；当轮 366 passed）。
 7. ~~MSE 捕获后台归档~~（完成 2026-11-07：后台线程、跨卷校验、归档中状态、失败保留源、退出续传；当轮 381 passed）。
 8. ~~MSE 源轨清理~~（完成 2026-11-07：默认关闭的归档后清理 + 手动“清理捕获源轨…”，越界保护/归档中拒绝；当轮 389 passed）。
 9. ~~MSE WebM 实机验证~~（完成 2026-11-08：本地 VP9/Opus WebM MSE 页，Edge 156 实机捕获、ffmpeg 合并、GUI 归档/清理；390 passed）。
-10. ~~MSE 公开站点矩阵~~（完成 2026-11-08：DASH-IF ×3 公开素材 + 本地 WebM 控制，4/4 通过；hls.js demo 因 jQuery/googleapis 不可达 blocked）。下一方向可从 P2/P3 选择，公开发布前处理代码签名/CI 实跑。
+10. ~~MSE 公开站点矩阵~~（完成 2026-11-08：DASH-IF ×3 公开素材 + 本地 WebM 控制，4/4 通过；hls.js demo 因 jQuery/googleapis 不可达 blocked）。下一方向可从 P2/P3 选择；公开发布前配置 SignPath OSS 签名并跑正式 Release。
 
 ---
 

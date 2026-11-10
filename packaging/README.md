@@ -96,9 +96,12 @@ python packaging\make_update_manifest.py ^
 
 - `.github/workflows/ci.yml`：Windows + Python 3.13/3.14，版本一致性、编译、PowerShell
   语法校验、全量 pytest。
-- `.github/workflows/release.yml`：tag `vX.Y.Z` 触发构建、Inno Setup、zip、SHA256SUMS、
-  `latest.json`、GitHub Release。
+- `.github/workflows/release.yml`：tag `vX.Y.Z` 或手动 `workflow_dispatch`（支持
+  `dry_run`）触发构建、SignPath OSS 签名（PFX 兜底）、Inno Setup、zip、
+  SHA256SUMS、`latest.json`、GitHub Release。
 - `packaging/check_version.py`：三处版本一致性检查；发布 tag 必须匹配。
-- `packaging/sign_windows.ps1`：用 `signtool` 对 GUI/CLI/Host/安装包签名并验证。CI 只在
-  `WINDOWS_CERT_PFX_BASE64` secret 存在时执行；没有证书会 warning，产物未签名。
-- 完整步骤与 secrets 说明见 [`../docs/ci.md`](../docs/ci.md)。
+- SignPath 配置：`SIGNPATH_API_TOKEN` secret + `SIGNPATH_*` variables；未配置时
+  回退 `WINDOWS_CERT_PFX_BASE64` / `WINDOWS_CERT_PASSWORD`；两者都没有时产物
+  未签名并 warning。`packaging/sign_windows.ps1` 是 PFX 兜底。
+- 完整步骤见 [`../docs/signing.md`](../docs/signing.md) 与
+  [`../docs/ci.md`](../docs/ci.md)。

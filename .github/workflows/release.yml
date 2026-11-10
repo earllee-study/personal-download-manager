@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -83,20 +84,32 @@ jobs:
         shell: cmd
         run: packaging\build.cmd
 
-      - name: Detect signing secret
+      - name: Detect signing method
         id: signing
         shell: pwsh
         env:
           PFX_BASE64: ${{ secrets.WINDOWS_CERT_PFX_BASE64 }}
+          SIGNPATH_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORG: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          SIGNPATH_PROJECT: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          SIGNPATH_POLICY: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:PFX_BASE64)) {
-            "enabled=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          } else {
-            "enabled=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          $method = "none"
+          if (
+            -not [string]::IsNullOrWhiteSpace($env:SIGNPATH_TOKEN) -and
+            -not [string]::IsNullOrWhiteSpace($env:SIGNPATH_ORG) -and
+            -not [string]::IsNullOrWhiteSpace($env:SIGNPATH_PROJECT) -and
+            -not [string]::IsNullOrWhiteSpace($env:SIGNPATH_POLICY)
+          ) {
+            $method = "signpath"
+          } elseif (-not [string]::IsNullOrWhiteSpace($env:PFX_BASE64)) {
+            $method = "pfx"
           }
+          "method=$method" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Signing method: $method"
 
-      - name: Sign portable executables (optional)
-        if: steps.signing.outputs.enabled == 'true'
+      - name: Sign portable executables (PFX)
+        if: steps.signing.outputs.method == 'pfx'
         shell: pwsh
         env:
           WINDOWS_CERT_PFX_BASE64: ${{ secrets.WINDOWS_CERT_PFX_BASE64 }}
@@ -123,6 +136,64 @@ jobs:
             Remove-Item -LiteralPath $pfx -Force -ErrorAction SilentlyContinue
           }
 
+      - name: Stage unsigned portable executables (SignPath)
+        if: steps.signing.outputs.method == 'signpath'
+        shell: pwsh
+        run: |
+          $stage = "unsigned-portable"
+          Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $stage | Out-Null
+          Copy-Item "dist\pdm-gui\pdm-gui.exe" "$stage\pdm-gui.exe" -Force
+          Copy-Item "dist\pdm-cli\pdm.exe" "$stage\pdm.exe" -Force
+          Copy-Item "dist\pdm-host\pdm-host.exe" "$stage\pdm-host.exe" -Force
+          Get-ChildItem -LiteralPath $stage -File | Select-Object Name, Length
+
+      - name: Upload unsigned portable executables (SignPath)
+        id: upload-portable
+        if: steps.signing.outputs.method == 'signpath'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdm-portable-unsigned
+          path: unsigned-portable/*.exe
+          if-no-files-found: error
+
+      - name: Submit portable signing request (SignPath)
+        if: steps.signing.outputs.method == 'signpath'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.upload-portable.outputs.artifact-id }}
+          output-artifact-directory: signed-portable
+          wait-for-completion: true
+
+      - name: Restore signed portable executables
+        if: steps.signing.outputs.method == 'signpath'
+        shell: pwsh
+        run: |
+          $signed = @{}
+          Get-ChildItem -LiteralPath "signed-portable" -Recurse -File -Filter *.exe |
+            ForEach-Object { $signed[$_.Name] = $_.FullName }
+          $targets = @{
+            "pdm-gui.exe"  = "dist\pdm-gui\pdm-gui.exe"
+            "pdm.exe"      = "dist\pdm-cli\pdm.exe"
+            "pdm-host.exe" = "dist\pdm-host\pdm-host.exe"
+          }
+          foreach ($name in $targets.Keys) {
+            if (-not $signed.ContainsKey($name)) {
+              throw "signed file missing: $name"
+            }
+            Copy-Item -LiteralPath $signed[$name] -Destination $targets[$name] -Force
+            $sig = Get-AuthenticodeSignature -LiteralPath $targets[$name]
+            if ($sig.Status -ne "Valid") {
+              throw "signature not valid for $($targets[$name]): $($sig.Status)"
+            }
+            Write-Host "signed: $($targets[$name])"
+          }
+
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y
 
@@ -145,8 +216,8 @@ jobs:
             throw "installer was not produced: $setup"
           }
 
-      - name: Sign installer (optional)
-        if: steps.signing.outputs.enabled == 'true'
+      - name: Sign installer (PFX)
+        if: steps.signing.outputs.method == 'pfx'
         shell: pwsh
         env:
           WINDOWS_CERT_PFX_BASE64: ${{ secrets.WINDOWS_CERT_PFX_BASE64 }}
@@ -169,6 +240,45 @@ jobs:
             Remove-Item -LiteralPath $pfx -Force -ErrorAction SilentlyContinue
           }
 
+      - name: Upload unsigned installer (SignPath)
+        id: upload-installer
+        if: steps.signing.outputs.method == 'signpath'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdm-installer-unsigned
+          path: dist/pdm-setup-${{ env.VERSION }}.exe
+          if-no-files-found: error
+
+      - name: Submit installer signing request (SignPath)
+        if: steps.signing.outputs.method == 'signpath'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.upload-installer.outputs.artifact-id }}
+          output-artifact-directory: signed-installer
+          wait-for-completion: true
+
+      - name: Restore signed installer
+        if: steps.signing.outputs.method == 'signpath'
+        shell: pwsh
+        run: |
+          $name = "pdm-setup-$env:VERSION.exe"
+          $signed = Get-ChildItem -LiteralPath "signed-installer" -Recurse -File -Filter $name |
+            Select-Object -First 1
+          if (-not $signed) {
+            throw "signed installer missing: $name"
+          }
+          Copy-Item -LiteralPath $signed.FullName -Destination "dist\$name" -Force
+          $sig = Get-AuthenticodeSignature -LiteralPath "dist\$name"
+          if ($sig.Status -ne "Valid") {
+            throw "installer signature not valid: $($sig.Status)"
+          }
+          Write-Host "signed: dist\$name"
+
       - name: Verify installer docs
         shell: pwsh
         run: |
@@ -187,8 +297,8 @@ jobs:
             Get-ChildItem -LiteralPath $docs -File |
               Select-Object -ExpandProperty Name
           )
-          if ($actual.Count -ne 16) {
-            throw "installer docs count is $($actual.Count), expected 16: $($actual -join ', ')"
+          if ($actual.Count -ne 17) {
+            throw "installer docs count is $($actual.Count), expected 17: $($actual -join ', ')"
           }
           $forbidden = @(
             Get-ChildItem -LiteralPath $docs -File |
@@ -225,10 +335,10 @@ jobs:
           }
 
       - name: Warn about unsigned artifacts
-        if: steps.signing.outputs.enabled != 'true'
+        if: steps.signing.outputs.method == 'none'
         shell: pwsh
         run: |
-          Write-Host "::warning::WINDOWS_CERT_PFX_BASE64 is not configured; release artifacts are unsigned and will show SmartScreen warnings."
+          Write-Host "::warning::No SignPath or PFX signing credentials are configured; release artifacts are unsigned and will show SmartScreen warnings."
 
       - name: Checksums and update manifest
         shell: pwsh

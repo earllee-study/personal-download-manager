@@ -92,5 +92,12 @@ def test_installer_ships_only_public_docs():
         "public-",
     ):
         assert internal not in iss
-    for public in ("browser-integration.md", "gui.md", "gui.png", "testing.md", "updating.md"):
+    for public in (
+        "browser-integration.md",
+        "gui.md",
+        "gui.png",
+        "testing.md",
+        "updating.md",
+        "signing.md",
+    ):
         assert public in iss
