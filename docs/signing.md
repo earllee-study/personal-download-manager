@@ -20,16 +20,38 @@
    - 项目（Project），例如 `pdm`
    - 签名策略（Signing Policy），例如 `release-signing`；dry-run 可另建
      `test-signing`
-   - Artifact Configuration：
-     - **便携版**：根节点 `<zip-file>`，子节点 `<pe-file>`，匹配 `*.exe`
-       （workflow 会把 `pdm-gui.exe`、`pdm.exe`、`pdm-host.exe` 平铺上传）
-     - **安装包**：根节点 `<zip-file>`，子节点 `<pe-file>`，匹配
-       `pdm-setup-*.exe`
-     - 也可以用一个配置匹配 `**/*.exe`，供两类 artifact 共用
-4. 创建 API token（需要该项目的 submitter 权限）。
+   - **一个** Artifact Configuration，例如 `pdm-executables`：
+     - 根节点必须是 `<zip-file>`
+     - 一个 `<pe-file path="*.exe" max-matches="unbounded" />` 即可同时处理
+       便携版（3 个 exe）和安装包（1 个 exe）
+     - workflow 上传的 zip 根目录就是 exe 文件（便携版会把
+       `pdm-gui.exe`、`pdm.exe`、`pdm-host.exe` 平铺）
+   - 建议先在 SignPath 的 Artifact Configuration 页面**上传样本 zip**，
+     让 SignPath 自动分析结构；样本可以在本地生成：
 
-> `actions/upload-artifact@v4` 默认会把上传内容压成 ZIP，因此 Artifact
-> Configuration 的根节点必须是 `<zip-file>`。workflow 已按这个前提编写。
+```powershell
+Compress-Archive -Path dist\pdm-gui\pdm-gui.exe, dist\pdm-cli\pdm.exe, dist\pdm-host\pdm-host.exe `
+  -DestinationPath pdm-portable-sample.zip -Force
+Compress-Archive -Path dist\pdm-setup-0.1.0.exe `
+  -DestinationPath pdm-installer-sample.zip -Force
+```
+
+推荐配置：
+
+```xml
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file path="*.exe" max-matches="unbounded" />
+  </zip-file>
+</artifact-configuration>
+```
+
+如果 SignPath 在样本中显示了文件夹前缀（例如
+`unsigned-portable/pdm-gui.exe`），把 path 改为
+`unsigned-portable/*.exe` 或 `**/*.exe`；当前 workflow 的
+`upload-artifact` 路径会把文件放在 zip 根目录。
+
+4. 创建 API token（需要该项目的 submitter 权限）。
 
 ## 2. GitHub 仓库配置
 
@@ -134,6 +156,9 @@ Get-AuthenticodeSignature dist\pdm-gui\pdm-gui.exe | Format-List
 - 每次签名请求都必须先通过 `actions/upload-artifact` 上传 artifact；workflow
   已分别上传便携版和安装包。
 - 如果 SignPath 变量缺失，签名步骤会跳过，发布产物未签名（会有 warning）。
+- 如果使用 SignPath 的 **test-signing** 测试策略，签名证书可能不受 Windows
+  信任，`Get-AuthenticodeSignature` 可能返回 `NotTrusted`；当前 workflow 要求
+  `Valid`。正式 dry-run 请使用 `release-signing` 生产策略。
 - 签名不等于 SmartScreen 立即无警告；信誉需要随签名使用逐步积累。
 - API token 只授予所需项目/策略的 submitter 权限，并定期轮换。
 - 安装包内只包含公开 docs；签名不会改变这一点，`release.yml` 仍会做 docs
