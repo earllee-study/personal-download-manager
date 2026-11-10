@@ -13,7 +13,16 @@
 
 ## 1. SignPath 侧准备
 
-1. 在 SignPath 申请 OSS/Foundation 项目，并关联 GitHub 仓库
+> 正确的 OSS 入口是 **SignPath Foundation**：
+>
+> - 申请：<https://signpath.org/apply>
+> - Foundation 首页：<https://signpath.org/>
+> - 产品页：<https://signpath.io/solutions/open-source-community>
+> - GitHub 集成文档：<https://docs.signpath.io/trusted-build-systems/github>
+>
+> `https://signpath.io/solutions/open-source-software` 是旧链接，会返回 404。
+
+1. 在 SignPath Foundation 申请 OSS 项目，并关联 GitHub 仓库
    `earllee-study/personal-download-manager`。
 2. 安装 **SignPath GitHub App**，授权该仓库。
 3. 在 SignPath 创建：
