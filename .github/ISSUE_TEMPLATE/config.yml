@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/earllee-study/personal-download-manager#readme
+    about: Read the README, docs and CHANGELOG first.
+  - name: Security report
+    url: https://github.com/earllee-study/personal-download-manager/security/advisories/new
+    about: Please report vulnerabilities privately, not in a public issue.

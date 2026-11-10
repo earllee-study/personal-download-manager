@@ -1,5 +1,7 @@
 # Personal Download Manager (PDM)
 
+[![CI](https://github.com/earllee-study/personal-download-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/earllee-study/personal-download-manager/actions/workflows/ci.yml)
+
 一个从零实现的多连接断点续传下载管理器，用于测试与互操作性研究。
 
 项目包含：
@@ -15,6 +17,24 @@
 > 内部开发状态、交接文档与原始证据不随公开仓库发布。
 
 ![PDM GUI](docs/gui.png)
+
+## 下载
+
+- 最新发布：<https://github.com/earllee-study/personal-download-manager/releases/latest>
+- Windows 安装包：`pdm-setup-0.1.0.exe`
+- 便携版：`pdm-gui-0.1.0-win64.zip`、`pdm-cli-0.1.0-win64.zip`、`pdm-host-0.1.0-win64.zip`
+- 校验和与更新清单：Release 中的 `SHA256SUMS.txt`、`latest.json`
+- 变更记录：[`CHANGELOG.md`](CHANGELOG.md)
+
+> Windows 产物目前**未签名**，首次运行可能出现 SmartScreen 提示。项目会随着社区反馈继续完善，并在条件满足后补充代码签名。
+
+## 参与贡献
+
+欢迎 issue 和 pull request。
+
+- 开发、测试与打包说明：[`CONTRIBUTING.md`](CONTRIBUTING.md)
+- 安全问题：请按 [`SECURITY.md`](SECURITY.md) 私下报告，不要开公开 issue
+- 行为准则：[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
 
 ---
 
